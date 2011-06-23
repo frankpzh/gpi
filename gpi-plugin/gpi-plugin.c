@@ -3,16 +3,20 @@
 #include <npapi.h>
 #include <npupp.h>
 
-char* (*pNP_GetMIMEDescription)(void);
-NPError (*pNP_Initialize)(NPNetscapeFuncs*, NPPluginFuncs*);
-NPError (*pNP_Shutdown)(void);
-NPError (*pNP_GetValue)(void *future, NPPVariable aVariable, void *aValue);
+#include "gpi-plugin.h"
 
-void *plugin_handle = 0;
+static char* (*pNP_GetMIMEDescription)(void);
+static NPError (*pNP_Initialize)(NPNetscapeFuncs*, NPPluginFuncs*);
+static NPError (*pNP_Shutdown)(void);
+static NPError (*pNP_GetValue)(void *future,
+                               NPPVariable aVariable, void *aValue);
+
+static void *plugin_handle = 0;
+
 NPPluginFuncs plugin;
-NPNetscapeFuncs browser, int_browser;
+NPNetscapeFuncs browser;
 
-void gpi_init() {
+void __attribute__ ((constructor)) gpi_init(void) {
     plugin_handle = dlopen("./libflashplayer.so", RTLD_LAZY);
     pNP_GetMIMEDescription = dlsym(plugin_handle, "NP_GetMIMEDescription");
     pNP_Initialize = dlsym(plugin_handle, "NP_Initialize");
@@ -20,63 +24,44 @@ void gpi_init() {
     pNP_GetValue = dlsym(plugin_handle, "NP_GetValue");
 }
 
-NPError NPN_GetURLNotify(NPP instance, const char* url,
-                         const char* window, void* notifyData) {
-    return browser.geturlnotify(instance, url, window, notifyData);
+void __attribute__ ((destructor)) gpi_fini(void) {
+    dlclose(plugin_handle);
+    plugin_handle = 0;
 }
-
-NPError NPN_PostURLNotify(NPP instance, const char* url,
-                          const char* window, uint32 len,
-                          const char* buf, NPBool file,
-                          void* notifyData) {
-    return browser.posturlnotify(instance, url, window,
-                                 len, buf, file, notifyData);
-}
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 NPError OSCALL
 NP_Initialize(NPNetscapeFuncs *npnf, NPPluginFuncs *nppfuncs)
 {
+    int i;
     NPError ret;
 
-    if (!plugin_handle)
-        gpi_init();
     memcpy(&browser, npnf, sizeof(NPNetscapeFuncs));
-    memcpy(&int_browser, npnf, sizeof(NPNetscapeFuncs));
-    int_browser.geturlnotify = &NPN_GetURLNotify;
-    int_browser.posturlnotify = &NPN_PostURLNotify;
+    for (i = 0; i < browser.size - 4; i += sizeof(void *)) {
+        void **bfunc, **int_bfunc;
+        bfunc = (void **)((unsigned long)&browser + 4 + i * sizeof(void *));
+        int_bfunc = (void **)((unsigned long)&int_browser + 4 + i * sizeof(void *));
+        if (*int_bfunc == 0)
+            *int_bfunc = *bfunc;
+    }
+
     ret = pNP_Initialize(&int_browser, nppfuncs);
+
     memcpy(&plugin, nppfuncs, sizeof(NPPluginFuncs));
+
     return ret;
 }
 
 NPError
 OSCALL NP_Shutdown() {
-    NPError ret;
-
-    ret = pNP_Shutdown();
-    dlclose(plugin_handle);
-    plugin_handle = 0;
-    return ret;
+    return pNP_Shutdown();
 }
 
 char *
 NP_GetMIMEDescription(void) {
-    if (!plugin_handle)
-        gpi_init();
     return pNP_GetMIMEDescription();
 }
 
 NPError OSCALL
 NP_GetValue(void *npp, NPPVariable variable, void *value) {
-    if (!plugin_handle)
-        gpi_init();
     return pNP_GetValue(npp, variable, value);
 }
-
-#ifdef __cplusplus
-}
-#endif

@@ -1,5 +1,5 @@
 LIB = libgpi-plugin.so
-OBJS = gpi-plugin.o
+OBJS = gpi-plugin.o intercepted.o
 
 CFLAGS = -Igecko-sdk/include -DXP_UNIX
 LDFLAGS = -ldl
