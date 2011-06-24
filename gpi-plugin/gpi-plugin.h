@@ -3,7 +3,7 @@
 
 #include <npupp.h>
 
-#define GPI_PLUGIN_PATH "/etc/gpl/plugins/"
+#define GPI_PLUGIN_PATH "/etc/gpi/plugins/"
 
 extern NPNetscapeFuncs browser, int_browser;
 
