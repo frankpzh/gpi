@@ -1,4 +1,5 @@
 LIB = libgpi-plugin.so
+EXECS = gpi-plugin-info
 OBJS = gpi-plugin.o intercepted.o
 
 CFLAGS = -Igecko-sdk/include -DXP_UNIX
@@ -8,7 +9,7 @@ GECKO_SDK_URL = ftp://ftp.mozilla.org/pub/mozilla.org/xulrunner/releases/1.8.0.4
 GECKO_SDK_PACK = download/gecko-sdk.tar.bz2
 
 .PHONY: all
-all: $(LIB)
+all: $(LIB) $(EXECS)
 
 $(LIB): $(OBJS)
 	$(CC) $(LDFLAGS) $^ -shared -o $@

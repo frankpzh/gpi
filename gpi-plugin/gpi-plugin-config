@@ -1,0 +1,93 @@
+#!/usr/bin/env python
+
+import glob, optparse, os, shutil
+
+MACH_SUFFIX = ""
+if os.uname()[4] == "x86_64":
+    MACH_SUFFIX = "64"
+GPI_PATH = "/usr/lib%s/libgpi-plugin.so" % MACH_SUFFIX
+GPI_PLUGIN_PATH = "/etc/gpi/plugins"
+PLUGIN_PATHS = []
+PLUGIN_PATHS.extend(glob.glob("/usr/lib%s/mozilla/plugins/*.so" % MACH_SUFFIX))
+
+def list_plugin():
+    for i, p in enumerate(PLUGIN_PATHS, start = 1):
+        inted = None
+        if os.stat(p).st_size == os.stat(GPI_PATH).st_size:
+            inted = True
+        print("[%d] %s %s" % (i, os.path.basename(p), inted and "*" or ""))
+
+def int_plugin(i):
+    if not os.path.isdir(GPI_PLUGIN_PATH):
+        os.makedirs(GPI_PLUGIN_PATH, 0755)
+
+    if len(PLUGIN_PATHS) < i:
+        print "index invaild"
+        return
+    p = PLUGIN_PATHS[i - 1]
+
+    if os.stat(p).st_size == os.stat(GPI_PATH).st_size:
+        print "plugin is already being intercepted now"
+        return
+
+    dest = "%s/%s" % (GPI_PLUGIN_PATH, os.path.basename(p))
+    if os.path.islink(p):
+        linkto = os.readlink(p)
+        os.symlink(linkto, dest)
+    else:
+        shutil.copy2(p, dest)
+    os.remove(p)
+    shutil.copy2(GPI_PATH, p)
+
+def rest_plugin(i):
+    if not os.path.isdir(GPI_PLUGIN_PATH):
+        os.makedirs(GPI_PLUGIN_PATH, 0755)
+
+    if len(PLUGIN_PATHS) < i:
+        print "index invaild"
+        return
+    p = PLUGIN_PATHS[i - 1]
+
+    if os.stat(p).st_size != os.stat(GPI_PATH).st_size:
+        print "plugin is not being intercepted"
+        return
+
+    src = "%s/%s" % (GPI_PLUGIN_PATH, os.path.basename(p))
+    os.remove(p)
+    if os.path.islink(src):
+        linkto = os.readlink(src)
+        os.symlink(linkto, p)
+    else:
+        shutil.copy2(src, p)
+    os.remove(src)
+
+def main():
+    parser = optparse.OptionParser()
+    parser.add_option("-l", "--list", action="store_true",dest="list")
+    parser.add_option("-i", "--intercept", action="store",
+                      type="int", dest="int",
+                      help="Intercept the selected plugin")
+    parser.add_option("-r", "--restore", action="store",
+                      type="int", dest="rest",
+                      help="Stop intercepting the selected plugin")
+    (options, args) = parser.parse_args()
+
+    if len(args):
+        parser.error("unknow arguments")
+    if options.list:
+        if options.int or options.rest:
+            parser.error("only one of -l, -i and -r should occur")
+        list_plugin()
+        return
+    if options.int:
+        if options.rest:
+            parser.error("only one of -l, -i and -r should occur")
+        int_plugin(options.int)
+        return
+    if options.rest:
+        rest_plugin(options.rest)
+        return
+    parser.parse_args(["-h"])
+
+if __name__ == "__main__":
+    main()

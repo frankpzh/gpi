@@ -25,7 +25,7 @@ typedef struct {
 } Dl_info;
 
 void __attribute__ ((constructor)) gpi_init(void) {
-    char path[256], fname[256];
+    static char path[256], fname[256];
     Dl_info info;
 
     if (!dladdr(gpi_init, &info))
