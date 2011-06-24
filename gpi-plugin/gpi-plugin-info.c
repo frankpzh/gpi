@@ -1,8 +1,9 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <dlfcn.h>
 #include <libgen.h>
 #include <npapi.h>
-#include <npupp.h>
+#include <npfunctions.h>
 
 static NPError (*Initialize)(NPNetscapeFuncs*, NPPluginFuncs*) = 0;
 static NPError (*Shutdown)(void) = 0;
@@ -14,7 +15,7 @@ const char* UserAgent(NPP instance) {
     return "";
 }
 
-void* MemAlloc(uint32 size) {
+void* MemAlloc(uint32_t size) {
     return malloc(size);
 }
 

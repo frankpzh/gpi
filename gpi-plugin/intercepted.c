@@ -6,7 +6,7 @@ static NPError GetURLNotify(NPP instance, const char* url,
 }
 
 static NPError PostURLNotify(NPP instance, const char* url,
-                             const char* window, uint32 len,
+                             const char* window, uint32_t len,
                              const char* buf, NPBool file,
                              void* notifyData) {
     return browser.posturlnotify(instance, url, window,

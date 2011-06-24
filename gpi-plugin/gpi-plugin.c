@@ -2,7 +2,6 @@
 #include <dlfcn.h>
 #include <libgen.h>
 #include <npapi.h>
-#include <npupp.h>
 
 #include "gpi-plugin.h"
 
@@ -48,6 +47,10 @@ void __attribute__ ((destructor)) gpi_fini(void) {
     if (plugin_handle) {
         dlclose(plugin_handle);
         plugin_handle = 0;
+        pNP_GetMIMEDescription = 0;
+        pNP_Initialize = 0;
+        pNP_Shutdown = 0;
+        pNP_GetValue = 0;
     }
 }
 
@@ -57,33 +60,44 @@ NP_Initialize(NPNetscapeFuncs *npnf, NPPluginFuncs *nppfuncs)
     int i;
     NPError ret;
 
-    memcpy(&browser, npnf, sizeof(NPNetscapeFuncs));
+    if (!pNP_Initialize)
+        return NPERR_MODULE_LOAD_FAILED_ERROR;
+
+    memcpy(&browser, npnf, sizeof(browser));
+    int_browser.size = browser.size;
+    int_browser.version = browser.version;
     for (i = 0; i < browser.size - 4; i += sizeof(void *)) {
         void **bfunc, **int_bfunc;
-        bfunc = (void **)((unsigned long)&browser + 4 + i * sizeof(void *));
-        int_bfunc = (void **)((unsigned long)&int_browser + 4 + i * sizeof(void *));
+        bfunc = (void **)((unsigned long)&browser + 4 + i);
+        int_bfunc = (void **)((unsigned long)&int_browser + 4 + i);
         if (*int_bfunc == 0)
             *int_bfunc = *bfunc;
     }
 
     ret = pNP_Initialize(&int_browser, nppfuncs);
 
-    memcpy(&plugin, nppfuncs, sizeof(NPPluginFuncs));
+    memcpy(&plugin, nppfuncs, sizeof(plugin));
 
     return ret;
 }
 
 NPError
 OSCALL NP_Shutdown() {
+    if (!pNP_Shutdown)
+        return NPERR_NO_ERROR;
     return pNP_Shutdown();
 }
 
 char *
 NP_GetMIMEDescription(void) {
+    if (!pNP_GetMIMEDescription)
+        return "";
     return pNP_GetMIMEDescription();
 }
 
 NPError OSCALL
 NP_GetValue(void *npp, NPPVariable variable, void *value) {
+    if (!pNP_GetValue)
+        return NPERR_NO_DATA;
     return pNP_GetValue(npp, variable, value);
 }
