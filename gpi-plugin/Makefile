@@ -5,6 +5,13 @@ OBJS = gpi-plugin.o intercepted.o
 CFLAGS = -Ixulrunner-sdk/include -DXP_UNIX
 LDFLAGS = -ldl
 
+MACH = $(shell uname -m)
+ifeq ($(MACH),x86_64)
+MACH_SUFFIX = 64
+else
+MACH_SUFFIX =
+endif
+
 GECKO_SDK = xulrunner-sdk
 GECKO_SDK_URL = http://releases.mozilla.org/pub/mozilla.org/xulrunner/releases/1.9.2.18/sdk/xulrunner-1.9.2.18.en-US.linux-i686.sdk.tar.bz2
 GECKO_SDK_PACK = download/xulrunner-sdk.tar.bz2
@@ -13,7 +20,7 @@ GECKO_SDK_PACK = download/xulrunner-sdk.tar.bz2
 all: $(GECKO_SDK) $(LIB) $(EXECS)
 
 $(LIB): $(OBJS)
-	$(CC) $(LDFLAGS) $^ -shared -o $@
+	$(CC) $(LDFLAGS) $^ -shared -Wl,-soname,$@ -o $@
 
 $(GECKO_SDK_PACK): download
 	wget $(GECKO_SDK_URL) -O $@
@@ -28,3 +35,7 @@ $(GECKO_SDK):
 .PHONY: clean
 clean:
 	rm -rf $(LIB) $(OBJS) $(EXECS)
+
+.PHONY: install
+install:
+	install -m 644 -o root -t /usr/lib$(MACH_SUFFIX) $(LIB)
