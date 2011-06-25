@@ -1,20 +1,28 @@
 #!/usr/bin/env python
 
 import glob, optparse, os, shutil
+from subprocess import Popen, PIPE
 
 MACH_SUFFIX = ""
 if os.uname()[4] == "x86_64":
     MACH_SUFFIX = "64"
-GPI_PATH = "/usr/lib%s/libgpi-plugin.so" % MACH_SUFFIX
+GPI_NAME = "libgpi-plugin.so"
+GPI_PATH = "/usr/lib%s/%s" % (MACH_SUFFIX, GPI_NAME)
 GPI_PLUGIN_PATH = "/etc/gpi/plugins"
 PLUGIN_PATHS = []
 PLUGIN_PATHS.extend(glob.glob("/usr/lib%s/mozilla/plugins/*.so" % MACH_SUFFIX))
 PLUGIN_PATHS.extend(glob.glob("/usr/lib%s/nsbrowser/plugins/*.so" %MACH_SUFFIX))
 
+def soname(path):
+    p1 = Popen(["readelf", "-d", path], stdout=PIPE)
+    p2 = Popen(["grep", "(SONAME)"], stdin=p1.stdout, stdout=PIPE)
+    p3 = Popen(["sed", "s/^.*\[\(.*\)\]$/\\1/"], stdin=p2.stdout, stdout=PIPE)
+    return p3.communicate()[0].split("\n")[0]
+
 def list_plugin():
     for i, p in enumerate(PLUGIN_PATHS, start = 1):
         inted = None
-        if os.stat(p).st_size == os.stat(GPI_PATH).st_size:
+        if soname(p) == GPI_NAME:
             inted = True
         print("[%d] %s %s" % (i, os.path.basename(p), inted and "*" or ""))
 
@@ -27,7 +35,7 @@ def int_plugin(i):
         return
     p = PLUGIN_PATHS[i - 1]
 
-    if os.stat(p).st_size == os.stat(GPI_PATH).st_size:
+    if soname(p) == GPI_NAME:
         print "plugin is already being intercepted now"
         return
 
@@ -49,7 +57,7 @@ def rest_plugin(i):
         return
     p = PLUGIN_PATHS[i - 1]
 
-    if os.stat(p).st_size != os.stat(GPI_PATH).st_size:
+    if soname(p) != GPI_NAME:
         print "plugin is not being intercepted"
         return
 
