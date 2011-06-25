@@ -1,5 +1,6 @@
 LIB = libgpi-plugin.so
 EXECS = gpi-plugin-info
+SCRIPTS = gpi-plugin-config
 OBJS = gpi-plugin.o intercepted.o
 
 CFLAGS = -Ixulrunner-sdk/include -DXP_UNIX
@@ -39,3 +40,4 @@ clean:
 .PHONY: install
 install:
 	install -m 644 -o root -t /usr/lib$(MACH_SUFFIX) $(LIB)
+	install -m 700 -o root -t /sbin $(EXECS) $(SCRIPTS)
