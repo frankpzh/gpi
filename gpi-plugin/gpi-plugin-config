@@ -9,6 +9,7 @@ GPI_PATH = "/usr/lib%s/libgpi-plugin.so" % MACH_SUFFIX
 GPI_PLUGIN_PATH = "/etc/gpi/plugins"
 PLUGIN_PATHS = []
 PLUGIN_PATHS.extend(glob.glob("/usr/lib%s/mozilla/plugins/*.so" % MACH_SUFFIX))
+PLUGIN_PATHS.extend(glob.glob("/usr/lib%s/nsbrowser/plugins/*.so" %MACH_SUFFIX))
 
 def list_plugin():
     for i, p in enumerate(PLUGIN_PATHS, start = 1):
