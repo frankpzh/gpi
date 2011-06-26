@@ -12,9 +12,11 @@ GECKO_SDK_PACK = download/xulrunner-sdk.tar.bz2
 moduledir = $(libdir)
 module_SCRIPTS = $(LIB)
 bin_PROGRAMS = gpi-plugin-info
-bin_SCRIPTS = gpi-plugin-config
+dist_bin_SCRIPTS = gpi-plugin-config
 
-gpi_plugin_info_SOURCES = gpi-plugin-info.c $(GECKO_HEADER)
+gpi_plugin_info_SOURCES = gpi-plugin-info.c
+nodist_gpi_plugin_info_SOURCES = $(GECKO_HEADER)
+EXTRA_DIST = gpi-plugin.c intercepted.c gpi-plugin.h
 
 $(GECKO_SDK_PACK): download
 	wget $(GECKO_SDK_URL) -O $@
